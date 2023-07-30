@@ -1,0 +1,80 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+
+
+def activation_func(a_j):
+    sig=1/(1+np.clip(np.exp(-a_j), -35, 35))
+    return sig
+
+
+def feed_forward(w, x_or_z):
+    x_or_z = np.hstack((x_or_z, 1))
+    a_j = np.dot(w, x_or_z)
+    x_or_z = activation_func(a_j)
+    return x_or_z
+
+
+def back_propagation_output(x, y, t, z, w_y_z, i):
+    x = np.hstack((x, 1))
+    z = np.hstack((z, 1))
+    delta_k = y * (1 - y) * (y - t[i])
+    grad_w_y = delta_k * z.T
+    return back_propagation_hidden(x, z, w_y_z, delta_k, grad_w_y)
+
+
+def back_propagation_hidden(x, z, w_y_z, delta_k, grad_w_y):
+    Z = np.multiply(z, (1 - z))
+    Z = np.matrix(Z)
+    delta = np.multiply(Z.T , w_y_z) * delta_k
+    grad_w = np.outer(delta[0:6], x)
+    grad_w_y = np.matrix(grad_w_y)
+    return grad_w_y.T, grad_w.T
+
+
+def error_calc(y, t):
+    error = (y - t[i])**2
+    return error
+
+
+def plot_error(error_mat):
+    plt.plot(range(0, K), np.sum(error_mat, axis=1)/100)
+    plt.xlabel('Iteration')
+    plt.ylabel('Error')
+    plt.title('Error(Iteration)')
+    plt.show()
+    plt.figure()
+
+
+binary_matrix = np.unpackbits(np.arange(8, dtype=np.uint8)[:, np.newaxis], axis=1)[:, -3:]
+t = np.sum(binary_matrix, axis=1) % 2
+w = np.random.normal(loc=0, scale=1, size=(4, 6))
+w_z_y = np.random.normal(loc=0, scale=1, size=(7, 1))
+a_j = np.zeros(w.shape[1])
+a_j_y = 0
+delta = np.zeros(w.shape[1])
+delta_k = 0
+K = 2000
+iterations = 100
+error_mat = np.zeros((K, iterations))
+etta = 15
+for k in range(iterations):
+    for n in range(K):
+        error = 0
+        grad_w = np.zeros(w.shape)
+        grad_w_y = np.zeros(w_z_y.shape)
+        for i in range(len(t)):
+            x = binary_matrix[i]
+            z = feed_forward(w.T, x)
+            y = feed_forward(w_z_y.T, z)
+            grad_w_y_curr, grad_w_curr = back_propagation_output(x, y, t, z, w_z_y, i)
+            grad_w += grad_w_curr
+            grad_w_y += grad_w_y_curr
+            error += error_calc(y, t)
+        w = w - etta * grad_w/len(t)
+        w_z_y = w_z_y - etta*grad_w_y/len(t)
+        error_mat[n, k] = error/len(t)
+    w = np.random.normal(loc=0, scale=1, size=(4, 6))
+    w_z_y = np.random.normal(loc=0, scale=1, size=(7, 1))
+plot_error(error_mat)
+
