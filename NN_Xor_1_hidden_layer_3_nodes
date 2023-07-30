@@ -1,0 +1,66 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+
+
+def activation_func(a_j):
+    sig=1/(1+np.clip(np.exp(-a_j), -35, 35))
+    return sig
+
+
+def feed_forward(w, x):
+    a_j = np.dot(w, x)
+    z = activation_func(a_j)
+    z[-1] = 1
+    a_j[-1] = np.dot(w[-1], z)
+    y = activation_func(a_j[-1])  # output
+    return y, z
+
+
+def back_propagation(w, y, z, t, i):
+    delta_k = y * (1 - y) * (y - t[i])  # output layer
+    delta = z * (1 - z) * w[-1] * delta_k
+    delta[-1] = delta_k
+    grad_w = np.outer(delta, x)
+    grad_w[-1] = delta_k * z.T
+    return grad_w
+
+
+def error_calc(y, t):
+    error = (y - t[i])**2
+    return error
+
+
+def plot_error(error_mat):
+    plt.plot(range(0, K), np.sum(error_mat, axis=1)/100)
+    plt.xlabel('Iteration')
+    plt.ylabel('Error')
+    plt.title('Error(Iteration)')
+    plt.show()
+    plt.figure()
+
+
+binary_matrix = np.unpackbits(np.arange(8, dtype=np.uint8)[:, np.newaxis], axis=1)[:, -3:]
+t = np.sum(binary_matrix, axis=1) % 2
+w = np.random.normal(loc=0, scale=1, size=(4, 4))
+a_j = np.zeros(w.shape[1])
+delta = np.zeros(w.shape[1])
+K = 2000
+iterations = 100
+error_mat = np.zeros((K, iterations))
+etta = 15
+for k in range(iterations):
+    for n in range(K):
+        error = 0
+        grad_w = np.zeros(w.shape)
+        for i in range(len(t)):
+            x = binary_matrix[i]
+            x = np.hstack((x, 1))
+            y, z = feed_forward(w, x)
+            grad_w += back_propagation(w, y, z, t, i)
+            error += error_calc(y, t)
+        w = w - etta * grad_w/len(t)
+        error_mat[n, k] = error/len(t)
+    w = np.random.normal(loc=0, scale=1, size=(4, 4))
+plot_error(error_mat)
+
